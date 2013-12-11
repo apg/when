@@ -1,0 +1,64 @@
+.TH WHEN 1 "2013 Dec 10" " " ""
+.SH NAME
+when \- repeated runs a command, then another when the first succeeds
+.SH SYNOPSIS
+.B when
+.I [\-n <seconds>] [-h] [-v] <conditional> <command>
+.SH DESCRIPTION
+.BR when
+runs
+.I conditional
+every
+.B N
+.I seconds
+awaiting for "success." Success is defined by whether or not the
+.I conditional
+is still running when it is supposed to be run again.
+.PP
+The
+.I -n
+flag allows you to set the interval (in seconds) between successive
+attempts at running the
+.I conditional
+.
+.PP
+.BR when
+will run until interrupted, or
+.I command
+completes.
+.SH NOTE
+Note that both
+.I conditional
+and
+.I command
+are given to "sh -c"
+which means that you may need to use extra quoting to get the desired effect.
+.PP
+Note that POSIX option processing is used (i.e., option processing stops at
+the first non-option argument).  This means that flags after
+.I conditional
+don't get interpreted by
+.BR when
+itself.
+.SH EXAMPLES
+.PP
+.IP
+when "long running command that can fail quickly" "echo 'hurray it's working'"
+.SH COPYRIGHT
+Copyright (C) 2013 Andrew Gwozdziewycz
+.PP
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+.PP
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+.PP
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>
+.SH AUTHOR
+.B when
+was written by Andrew Gwozdziewycz <web@apgwoz.com> in 2013

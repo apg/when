@@ -1,0 +1,54 @@
+WHEN(1)                                                                WHEN(1)
+
+
+
+NNAAMMEE
+       when - repeated runs a command, then another when the first succeeds
+
+SSYYNNOOPPSSIISS
+       wwhheenn _[_-_n _<_s_e_c_o_n_d_s_>_] _[_-_h_] _[_-_v_] _<_c_o_n_d_i_t_i_o_n_a_l_> _<_c_o_m_m_a_n_d_>
+
+DDEESSCCRRIIPPTTIIOONN
+       wwhheenn  runs  _c_o_n_d_i_t_i_o_n_a_l every NN _s_e_c_o_n_d_s awaiting for "success." Success
+       is defined by whether or not the _c_o_n_d_i_t_i_o_n_a_l is still running  when  it
+       is supposed to be run again.
+
+       The _-_n flag allows you to set the interval (in seconds) between succes-
+       sive attempts at running the _c_o_n_d_i_t_i_o_n_a_l
+
+       wwhheenn will run until interrupted, or _c_o_m_m_a_n_d completes.
+
+NNOOTTEE
+       Note that both _c_o_n_d_i_t_i_o_n_a_l and _c_o_m_m_a_n_d are given to "sh -c" which means
+       that you may need to use extra quoting to get the desired effect.
+
+       Note  that  POSIX  option  processing  is used (i.e., option processing
+       stops at the first non-option argument).  This means that  flags  after
+       _c_o_n_d_i_t_i_o_n_a_l don't get interpreted by wwhheenn itself.
+
+EEXXAAMMPPLLEESS
+              when  "long running command that can fail quickly" "echo 'hurray
+              it's working'"
+
+CCOOPPYYRRIIGGHHTT
+       Copyright (C) 2013 Andrew Gwozdziewycz
+
+       This program is free software: you can redistribute it and/or modify it
+       under  the  terms of the GNU General Public License as published by the
+       Free Software Foundation, either version 3 of the License, or (at  your
+       option) any later version.
+
+       This  program  is  distributed  in the hope that it will be useful, but
+       WITHOUT ANY  WARRANTY;  without  even  the  implied  warranty  of  MER-
+       CHANTABILITY  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+       Public License for more details.
+
+       You should have received a copy of the GNU General Public License along
+       with this program.  If not, see <http://www.gnu.org/licenses/>
+
+AAUUTTHHOORR
+       wwhheenn was written by Andrew Gwozdziewycz <web@apgwoz.com> in 2013
+
+
+
+                                  2013 Dec 10                          WHEN(1)
