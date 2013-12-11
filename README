@@ -3,7 +3,7 @@ WHEN(1)                                                                WHEN(1)
 
 
 NAME
-       when - repeated runs a command, then another when the first succeeds
+       when - repeatedly runs a command, then another when the first succeeds
 
 SYNOPSIS
        when [-n <seconds>] [-h] [-v] <conditional> <command>

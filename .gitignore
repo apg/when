@@ -1,3 +1,4 @@
+when
 *.o
 .*~
 .DS_Store
