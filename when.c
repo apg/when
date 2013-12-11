@@ -213,8 +213,6 @@ run_zero()
   int last_time;
   int chld_status, status;
 
-  struct rusage rusage;
-
   VERBOSE("INFO: run in success when zero mode\n");
 
   do {
@@ -237,7 +235,7 @@ run_zero()
       else {
         current_state = LAUNCHING;
         VERBOSE("INFO: waiting...\n");
-        if (wait4(wait_for, &chld_status, 0, &rusage) >= 0) {
+        if (waitpid(wait_for, &chld_status, 0) >= 0) {
           status = WEXITSTATUS(chld_status);
           if (status == 0) {
             VERBOSE("INFO: FINISHED, will run finish command\n");
