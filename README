@@ -56,9 +56,17 @@ NOTE
 EXAMPLES
        TODO more examples needed
 
+       Suppose you have a failing build, xmessage will alert you when it  suc-
+       ceeds.
 
-	      when "long running command that can fail quickly" "echo  'hurray
-	      it's working'"
+	      when "make" "xmessage 'hurrah, build passed'"
+
+       Or you want to say hello to john when we logs on
+
+	      when "w | grep john" "echo 'hello, john' | write john"
+
+SEE ALSO
+       watch(1)
 
 COPYRIGHT
        Copyright (C) 2013 Andrew Gwozdziewycz

@@ -107,8 +107,15 @@ itself.
 .I TODO
 more examples needed
 .PP
+Suppose you have a failing build, xmessage will alert you when it succeeds.
 .IP
-when "long running command that can fail quickly" "echo 'hurray it's working'"
+when "make" "xmessage 'hurrah, build passed'"
+.PP
+Or you want to say hello to john when we logs on
+.IP
+when "w | grep john" "echo 'hello, john' | write john"
+.SH SEE ALSO
+watch(1)
 .SH COPYRIGHT
 Copyright (C) 2013 Andrew Gwozdziewycz
 .PP
