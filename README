@@ -6,41 +6,68 @@ NAME
        when - repeatedly runs a command, then another when the first succeeds
 
 SYNOPSIS
-       when [-n <seconds>] [-h] [-v] <conditional> <command>
+       when [-n <seconds>] [-t|-z] [-h] [-v] <conditional> <command>
 
 DESCRIPTION
        when  runs  conditional every N seconds awaiting for "success." Success
-       is defined by whether or not the conditional is still running  when  it
-       is supposed to be run again.
+       is defined in one of two ways. In timebomb mode, -t, success is defined
+       by  whether or not the conditional is still running after N seconds (as
+       specified by the -n flag). In zero mode, -z, success is  acheived  when
+       condtional exits with a return value of 0.
 
-       The -n flag allows you to set the interval (in seconds) between succes-
+       The  -n flag allows the interval to be set (in seconds) between succes-
        sive attempts at running the conditional
 
        when will run until interrupted, or command completes.
+
+
+OPTIONS
+       -h     Prints the help message and exits successfully.
+
+
+       -n seconds
+	      Sets the interval for running the conditional to  seconds  time-
+	      bomb mode, seconds will need to pass before the conditional suc-
+	      ceeds.
+
+
+       -t     Sets the success mode to timebomb which  succeeds  after  condi-
+	      tional has been running for at least seconds
+
+
+       -v     Turns on verbose output. Mostly useful for debugging purposes.
+
+
+       -z     Sets  the  success mode to zero which succeeds after conditional
+	      returns 0 the first time. The conditional is  guaranteed  to  be
+	      run at most 1 time every seconds
 
 NOTE
        Note that both conditional and command are given to "sh -c" which means
        that you may need to use extra quoting to get the desired effect.
 
-       Note  that  POSIX  option  processing  is used (i.e., option processing
-       stops at the first non-option argument).  This means that  flags  after
+       Note that POSIX option processing  is  used  (i.e.,  option  processing
+       stops  at  the first non-option argument).  This means that flags after
        conditional don't get interpreted by when itself.
 
 EXAMPLES
-	      when  "long running command that can fail quickly" "echo 'hurray
+       TODO more examples needed
+
+
+	      when "long running command that can fail quickly" "echo  'hurray
 	      it's working'"
 
 COPYRIGHT
        Copyright (C) 2013 Andrew Gwozdziewycz
 
        This program is free software: you can redistribute it and/or modify it
-       under  the  terms of the GNU General Public License as published by the
-       Free Software Foundation, either version 3 of the License, or (at  your
+       under the terms of the GNU General Public License as published  by  the
+       Free  Software Foundation, either version 3 of the License, or (at your
        option) any later version.
 
-       This  program  is  distributed  in the hope that it will be useful, but
-       WITHOUT ANY  WARRANTY;  without  even  the  implied  warranty  of  MER-
-       CHANTABILITY  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+       This program is distributed in the hope that it  will  be  useful,  but
+       WITHOUT  ANY  WARRANTY;  without  even  the  implied  warranty  of MER-
+       CHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  General
        Public License for more details.
 
        You should have received a copy of the GNU General Public License along

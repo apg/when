@@ -3,7 +3,7 @@
 when \- repeatedly runs a command, then another when the first succeeds
 .SH SYNOPSIS
 .B when
-.I [\-n <seconds>] [-h] [-v] <conditional> <command>
+.I [\-n <seconds>] [-t|-z] [-h] [-v] <conditional> <command>
 .SH DESCRIPTION
 .BR when
 runs
@@ -11,13 +11,28 @@ runs
 every
 .B N
 .I seconds
-awaiting for "success." Success is defined by whether or not the
+awaiting for "success." Success is defined in one of two ways. In
+.I timebomb
+mode,
+.I \-t,
+success is defined by whether or not the
 .I conditional
-is still running when it is supposed to be run again.
+is still running after
+.B N
+.I seconds
+(as specified by the
+.I \-n
+flag). In
+.I zero
+mode,
+.I \-z,
+success is acheived when
+.I condtional
+exits with a return value of 0.
 .PP
 The
 .I -n
-flag allows you to set the interval (in seconds) between successive
+flag allows the interval to be set (in seconds) between successive
 attempts at running the
 .I conditional
 .
@@ -26,6 +41,49 @@ attempts at running the
 will run until interrupted, or
 .I command
 completes.
+
+.SH OPTIONS
+.TP
+.B -h
+Prints the help message and exits successfully.
+.PP
+.TP
+.B -n \fIseconds\fP
+Sets the interval for running the
+.I conditional
+to
+.B seconds
+. This also means that in
+.I timebomb
+mode,
+.B seconds
+will need to pass before the conditional succeeds.
+.PP
+.TP
+.B -t
+Sets the success mode to
+.I timebomb
+which succeeds after
+.I conditional
+has been running for at least
+.I seconds
+.
+.PP
+.TP
+.B -v
+Turns on verbose output. Mostly useful for debugging purposes.
+.PP
+.TP
+.B -z
+Sets the success mode to
+.I zero
+which succeeds after
+.I conditional
+returns 0 the first time. The
+.I conditional
+is guaranteed to be run at most 1 time every
+.I seconds
+.
 .SH NOTE
 Note that both
 .I conditional
@@ -41,6 +99,9 @@ don't get interpreted by
 .BR when
 itself.
 .SH EXAMPLES
+.PP
+.I TODO
+more examples needed
 .PP
 .IP
 when "long running command that can fail quickly" "echo 'hurray it's working'"

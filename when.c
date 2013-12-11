@@ -21,30 +21,45 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <errno.h>
 
 typedef enum state {
   START = 1,
+  /* User has cancelled request */
   CANCELLED,
+  /* Launching conditional */
   LAUNCHING,
+  /* Waiting for alarm, or completion of conditional */
   WAITING,
-  DIED,
-  ALARM
+  /* Conditional died, and we got an alarm */
+  RESTART,
+  /* Alarm before conditional died */
+  ALARM,
+  /* We're ready to run finishing command */
+  FINISHED
 } state_t;
 
 static state_t current_state = START;
 static int alarm_time = 5;
+static int success_when_zero = 0;
+static int success_when_timebomb = 0;
+static int verbose = 0;
 static pid_t wait_for = 0;
 
+static char *execargs[4] = {
+  "/bin/sh",
+  "-c",
+  "",
+  NULL
+};
+
+#define VERBOSE(format...) { if (verbose) { fprintf(stderr, format); } }
+
 static void
-signal_handler(int signum)
+timebomb_handler(int signum)
 {
-  int status;
   switch (signum) {
-  case SIGCHLD:
-    /* When we get a sigchld, we wait for the alarm before
-       trying again, but put ourselves into a holding state */
-    current_state = WAITING;
-    break;
   case SIGINT:
     current_state = CANCELLED;
     alarm(0);
@@ -57,16 +72,77 @@ signal_handler(int signum)
     else {
       /* The SIGCHLD set us into the WAITING state, but now we got an
          alarm, which puts us in the DIED state. Re-launch imminent */
-      current_state = DIED;
+      current_state = RESTART;
     }
     break;
   }
+}
 
-  if (wait_for) {
-    waitpid(wait_for, &status, 0);
+static void
+zero_handler(int signum)
+{
+  if (signum == SIGINT) {
+    current_state = CANCELLED;
   }
 }
 
+/**
+ * Used in timebomb mode
+ */
+static void
+chld_handler(int signum)
+{
+  /* When we get a sigchld, we wait for the alarm before
+     trying again, but put ourselves into a holding state */
+  if (signum == SIGCHLD) {
+    current_state = WAITING;
+  }
+}
+
+void
+setup_sigchld(void)
+{
+  struct sigaction saction;
+  sigemptyset(&saction.sa_mask);
+
+  saction.sa_handler = chld_handler;
+  saction.sa_flags = 0;
+
+  if (sigaction(SIGCHLD, &saction, NULL)) {
+    perror("sigaction");
+    _exit(EXIT_FAILURE);
+  }
+}
+
+void
+setup_sighandlers(void)
+{
+  struct sigaction saction;
+
+  sigemptyset(&saction.sa_mask);
+  saction.sa_flags = 0;
+
+  if (success_when_zero) {
+    saction.sa_handler = zero_handler;
+  }
+  else {
+    saction.sa_handler = timebomb_handler;
+
+    if (sigaction(SIGALRM, &saction, NULL)) {
+      perror("sigaction");
+      _exit(EXIT_FAILURE);
+    }
+  }
+
+  if (sigaction(SIGINT, &saction, NULL)) {
+    perror("sigaction");
+    _exit(EXIT_FAILURE);
+  }
+
+  if (success_when_timebomb) {
+    setup_sigchld();
+  }
+}
 
 static void
 msleep(long ms)
@@ -78,34 +154,145 @@ msleep(long ms)
 }
 
 static void
-run(char *condition_cmd, char *finish_cmd)
+finish()
 {
-  char *newargs[4];
-  pid_t chld, finished_chld;
+  sigset_t oset;
+  pid_t finished_chld;
   int chld_status;
 
-  /* setup args */
-  newargs[0] = "/bin/sh";
-  newargs[1] = "-c";
-  newargs[2] = strdup(condition_cmd);
-  newargs[3] = 0;
+  if (current_state == ALARM || current_state == FINISHED) {
+    finished_chld = fork();
+    if (finished_chld < 0) {
+      perror("fork");
+      _exit(EXIT_FAILURE);
+    }
+    else if (finished_chld == 0) {
+      if (execv(execargs[0], execargs) < 0) {
+        perror("execv");
+        _exit(EXIT_FAILURE);
+      }
+    }
+    else {
+      /**
+       * We have an interesting problem. In the timebomb mode, we want to
+       * keep <conditional> running until it completes. However, it may be
+       * the case that <command> finishes quickly, which will signal a
+       * sigchld, and terminate the `when` process, and ultimately, the
+       * <conditional> that was originally running.
+       *
+       * The solution, for now (and this needs to be fixed), is to just
+       * call waitpid() in the signal handler after we execute the finish
+       * command.
+       */
+
+      VERBOSE("INFO: ignoring sigchld for finish\n");
+      if (sigprocmask(SIG_SETMASK, NULL, &oset) == 0) {
+        sigaddset(&oset, SIGCHLD);
+        sigprocmask(SIG_BLOCK, &oset, NULL);
+      }
+
+      if (waitpid(wait_for, &chld_status, 0) < 0) {
+        if (errno == ECHILD) {
+          _exit(EXIT_SUCCESS);
+        }
+      }
+      else {
+        _exit(chld_status);
+      }
+    }
+  }
+}
+
+static void
+run_zero()
+{
+  int now;
+  int last_time;
+  int chld_status, status;
+
+  struct rusage rusage;
+
+  VERBOSE("INFO: run in success when zero mode\n");
 
   do {
     switch (current_state) {
     case START:
-    case DIED:
-      chld = fork();
-      if (chld < 0) {
+    case RESTART:
+      last_time = time(NULL);
+      wait_for = fork();
+      if (wait_for < 0) {
         perror("fork");
         _exit(EXIT_FAILURE);
       }
-      else if (chld == 0) { /* launch conditional_cmd */
-        if (execv(newargs[0], newargs) < 0) {
+      else if (wait_for == 0) {
+        VERBOSE("INFO: running %s\n", execargs[0]);
+        if (execv(execargs[0], execargs) < 0) {
           perror("execv");
           _exit(EXIT_FAILURE);
         }
       }
       else {
+        current_state = LAUNCHING;
+        VERBOSE("INFO: waiting...\n");
+        if (wait4(wait_for, &chld_status, 0, &rusage) >= 0) {
+          status = WEXITSTATUS(chld_status);
+          if (status == 0) {
+            VERBOSE("INFO: FINISHED, will run finish command\n");
+            current_state = FINISHED;
+          }
+          else {
+            VERBOSE("INFO: > 0 exit code, WAITING for restart...\n");
+            current_state = WAITING;
+          }
+        }
+        else if (errno == ECHILD) {
+          VERBOSE("INFO: ECHILD, switching to WAITING %d\n", chld_status);
+          current_state = WAITING;
+        }
+      }
+    case WAITING:
+      /* sleep, hoping that we get some progress */
+      msleep(10);
+      now = time(NULL);
+      if ((now - last_time) >= alarm_time) {
+        /* process died, timeout occurred -- restart */
+        VERBOSE("INFO: ok to RESTART\n");
+        current_state = RESTART;
+      }
+      break;
+    default:
+      break;
+    }
+  }
+  while (current_state != FINISHED &&
+         current_state != CANCELLED);
+}
+
+
+static void
+run_timebomb()
+{
+
+  VERBOSE("INFO: run in success when timebomb mode\n");
+
+  do {
+    switch (current_state) {
+    case START:
+    case RESTART:
+      wait_for = fork();
+      if (wait_for < 0) {
+        perror("fork");
+        _exit(EXIT_FAILURE);
+      }
+      else if (wait_for == 0) { /* launch conditional_cmd */
+        VERBOSE("INFO: running %s\n", execargs[0]);
+        if (execv(execargs[0], execargs) < 0) {
+          perror("execv");
+          _exit(EXIT_FAILURE);
+        }
+      }
+      else {
+        VERBOSE("INFO: in LAUNCHING state, setting an alarm\n");
         current_state = LAUNCHING;
         alarm(alarm_time);
       }
@@ -113,99 +300,81 @@ run(char *condition_cmd, char *finish_cmd)
     case LAUNCHING:
     case WAITING:
       /* sleep, hoping that we get some progress */
-      msleep(100);
+      msleep(10);
       break;
     default:
       break;
     }
-  } while (current_state != ALARM && current_state != CANCELLED);
-
-  /* finish up! */
-  if (current_state == ALARM) {
-    finished_chld = fork();
-    if (finished_chld < 0) {
-      perror("fork");
-      _exit(EXIT_FAILURE);
-    }
-    else if (finished_chld == 0) {
-      /* need a new command */
-      newargs[2] = strdup(finish_cmd);
-
-      if (execv(newargs[0], newargs) < 0) {
-        perror("execv");
-        _exit(EXIT_FAILURE);
-      }
-    }
-    else {
-      /*
-        We wait here, but when the finish cmd happens, we get a sigchld
-        which breaks us out of the wait. For now, we establish a pid_t to
-        wait for, and do so in the signal handler.
-
-        In reality, we should probably block the SIGCHLD signal here and
-        go forth, or put ourselves in a wait loop.
-      */
-      wait_for = chld;
-      waitpid(wait_for, &chld_status, 0);
-    }
-  }
-  else if (current_state == CANCELLED) {
-    fprintf(stderr, "User aborted!\n");
-    _exit(EXIT_FAILURE);
-  }
+  } while (current_state != ALARM &&
+           current_state != CANCELLED &&
+           current_state != FINISHED);
 }
 
 void
 usage(int argc, char **argv)
 {
-  fprintf(stderr, "usage: %s [-n alarmtime] <condition> <finished>\n",
-         argv[0]);
-  _exit(EXIT_FAILURE);
-
+  fprintf(stderr, "usage: %s [-n seconds] "
+          "[-h] [-t|-z] [-v] <condition> <finished>\n",
+          argv[0]);
 }
+
 
 int
 main(int argc, char **argv)
 {
   char ch;
-  struct sigaction saction;
-
-  sigemptyset(&saction.sa_mask);
-  saction.sa_flags = 0;
-  saction.sa_handler = signal_handler;
-
-  if (sigaction(SIGCHLD, &saction, NULL)) {
-    perror("sigaction");
-    _exit(EXIT_FAILURE);
-  }
-
-  if (sigaction(SIGALRM, &saction, NULL)) {
-    perror("sigaction");
-    _exit(EXIT_FAILURE);
-  }
-
-  if (sigaction(SIGINT, &saction, NULL)) {
-    perror("sigaction");
-    _exit(EXIT_FAILURE);
-  }
 
   if (argc > 2) {
-    while ((ch = getopt(argc, argv, "n:")) != -1) {
+    while ((ch = getopt(argc, argv, "hn:tvz")) != -1) {
       switch (ch) {
+      case 'h':
+        usage(argc, argv);
+        _exit(EXIT_SUCCESS);
       case 'n':
         alarm_time = atoi(optarg);
         break;
+      case 't':
+        success_when_timebomb = 1;
+        break;
+      case 'v':
+        verbose = 1;
+        break;
+      case 'z':
+        success_when_zero = 1;
+        break;
       default:
         usage(argc, argv);
+        _exit(EXIT_FAILURE);
       }
     }
+
+    if (success_when_timebomb && success_when_zero) {
+      fprintf(stderr, "ERROR: can't use both timebomb and zero mode\n");
+      usage(argc, argv);
+      return 1;
+    }
+
+    setup_sighandlers();
+
     argc -= optind;
     argv += optind;
 
-    run(argv[0], argv[1]);
+    execargs[2] = strdup(argv[0]);
+    if (success_when_timebomb) {
+      run_timebomb();
+    }
+    else {
+      run_zero();
+    }
+
+    if (current_state == FINISHED || current_state == ALARM) {
+      execargs[2] = strdup(argv[1]);
+      finish();
+    }
   }
   else {
     usage(argc, argv);
   }
+
   return 0;
 }
