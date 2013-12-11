@@ -376,6 +376,8 @@ main(int argc, char **argv)
         finish();
         _exit(EXIT_SUCCESS);
       }
+
+      return 1;
     }
   }
 
