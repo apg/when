@@ -24,6 +24,9 @@
 #include <time.h>
 #include <errno.h>
 
+#define VERSION "0.2.0"
+
+
 typedef enum state {
   START = 1,
   /* User has cancelled request */
@@ -314,7 +317,7 @@ void
 usage(int argc, char **argv)
 {
   fprintf(stderr, "usage: %s [-n seconds] "
-          "[-h] [-t|-z] [-v] <condition> <finished>\n",
+          "[-h] [-t|-z] [-V] [-v] <condition> <finished>\n",
           argv[0]);
 }
 
@@ -324,7 +327,7 @@ main(int argc, char **argv)
 {
   char ch;
 
-  if (argc > 2) {
+  if (argc > 1) {
     while ((ch = getopt(argc, argv, "hn:tvz")) != -1) {
       switch (ch) {
       case 'h':
@@ -337,6 +340,9 @@ main(int argc, char **argv)
         success_when_timebomb = 1;
         break;
       case 'v':
+        printf("%s\n", VERSION);
+        _exit(EXIT_SUCCESS);
+      case 'V':
         verbose = 1;
         break;
       case 'z':
@@ -356,25 +362,25 @@ main(int argc, char **argv)
 
     setup_sighandlers();
 
-    argc -= optind;
-    argv += optind;
+    if ((argc - optind) == 2) {
+      argv += optind;
 
-    execargs[2] = strdup(argv[0]);
-    if (success_when_timebomb) {
-      run_timebomb();
-    }
-    else {
-      run_zero();
-    }
+      execargs[2] = strdup(argv[0]);
+      if (success_when_timebomb) {
+        run_timebomb();
+      }
+      else {
+        run_zero();
+      }
 
-    if (current_state == FINISHED || current_state == ALARM) {
-      execargs[2] = strdup(argv[1]);
-      finish();
+      if (current_state == FINISHED || current_state == ALARM) {
+        execargs[2] = strdup(argv[1]);
+        finish();
+        _exit(EXIT_SUCCESS);
+      }
     }
   }
-  else {
-    usage(argc, argv);
-  }
 
+  usage(argc, argv);
   return 0;
 }

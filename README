@@ -35,7 +35,10 @@ OPTIONS
 	      tional has been running for at least seconds
 
 
-       -v     Turns on verbose output. Mostly useful for debugging purposes.
+       -v     Prints the version and exits successfully.
+
+
+       -V     Turns on verbose output. Mostly useful for debugging purposes.
 
 
        -z     Sets  the  success mode to zero which succeeds after conditional
