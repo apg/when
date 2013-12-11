@@ -8,7 +8,7 @@ when: when.c
 	$(CC) $< $(CFLAGS) -o $@
 
 README: when.1
-	man -P cat ./when.1 > $@
+	man -P cat ./when.1 | fmt -w 79 > $@
 
 install: when
 	install -m 0755 when $(PREFIX)/bin/when
