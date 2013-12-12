@@ -1,14 +1,17 @@
 CHANGELOG
+ * 2013 December 12 (v 0.2.1)
+
+   - Attempt to exit with exit status of conditional
+   - Merge in an option handling bug (thanks @sshaw!)
+
  * 2013 December 11 (v 0.2)
  
    - Support "zero" mode, which runs the conditional until it exits with a
      return value of 0.
-
    - Overhaul of pretty much everything, though cleanup still needs to occur.
  
  * 2013 December 10 (v 0.1)
 
    - Initial release. Supports "timebomb" mode only which runs the second 
      command only if an alarm goes off before the first command terminates.
-
    - Allow a custom alarm time to be set.
