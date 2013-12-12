@@ -326,7 +326,7 @@ main(int argc, char **argv)
   char ch;
 
   if (argc > 1) {
-    while ((ch = getopt(argc, argv, "hn:tvz")) != -1) {
+    while ((ch = getopt(argc, argv, "hn:tvVz")) != -1) {
       switch (ch) {
       case 'h':
         usage(argc, argv);
@@ -376,6 +376,8 @@ main(int argc, char **argv)
         finish();
         _exit(EXIT_SUCCESS);
       }
+
+      return 1;
     }
   }
 
