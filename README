@@ -1,4 +1,5 @@
-WHEN(1)                                                                WHEN(1)
+WHEN(1)
+WHEN(1)
 
 
 
@@ -9,14 +10,14 @@ SYNOPSIS
        when [-n <seconds>] [-t|-z] [-h] [-v] <conditional> <command>
 
 DESCRIPTION
-       when  runs  conditional every N seconds awaiting for "success." Success
-       is defined in one of two ways. In timebomb mode, -t, success is defined
-       by  whether or not the conditional is still running after N seconds (as
-       specified by the -n flag). In zero mode, -z, success is  acheived  when
-       condtional exits with a return value of 0.
+       when  runs conditional every N seconds awaiting for "success." Success
+       is defined in one of two ways. In timebomb mode, -t, success is
+       defined by whether or not the conditional is still running after N
+       seconds (as specified by the -n flag). In zero mode, -z, success is
+       acheived when condtional exits with a return value of 0.
 
-       The  -n flag allows the interval to be set (in seconds) between succes-
-       sive attempts at running the conditional
+       The -n flag allows the interval to be set (in seconds) between
+       successive attempts at running the conditional
 
        when will run until interrupted, or command completes.
 
@@ -24,46 +25,52 @@ DESCRIPTION
 OPTIONS
        -h     Prints the help message and exits successfully.
 
-
        -n seconds
-	      Sets the interval for running the conditional to  seconds  time-
-	      bomb mode, seconds will need to pass before the conditional suc-
-	      ceeds.
+              Sets the interval for running the conditional to seconds
+              timebomb mode, seconds will need to pass before the conditional
+              succeeds.
 
-
-       -t     Sets the success mode to timebomb which  succeeds  after  condi-
-	      tional has been running for at least seconds
-
+       -t     Sets the success mode to timebomb which succeeds after
+       conditional has been running for at least seconds
 
        -v     Prints the version and exits successfully.
 
-
        -V     Turns on verbose output. Mostly useful for debugging purposes.
 
-
-       -z     Sets  the  success mode to zero which succeeds after conditional
-	      returns 0 the first time. The conditional is  guaranteed  to  be
-	      run at most 1 time every seconds
+       -z     Sets the success mode to zero which succeeds after conditional
+       returns 0 the first time. The conditional is guaranteed to be run
+       at most 1 time every seconds
 
 NOTE
-       Note that both conditional and command are given to "sh -c" which means
-       that you may need to use extra quoting to get the desired effect.
+       Note that both conditional and command are given to "sh -c" which
+       means that you may need to use extra quoting to get the desired effect.
 
-       Note that POSIX option processing  is  used  (i.e.,  option  processing
-       stops  at  the first non-option argument).  This means that flags after
-       conditional don't get interpreted by when itself.
+       Note that POSIX option processing is used (i.e., option processing
+       stops at the first non-option argument).  This means that flags
+       after conditional don't get interpreted by when itself.
+
+EXIT STATUS
+       when makes an effort to exit with the exit status returned by the
+       conditional in timebomb mode. In zero mode the exit status should be,
+       well, 0.
 
 EXAMPLES
        TODO more examples needed
 
-       Suppose you have a failing build, xmessage will alert you when it  suc-
-       ceeds.
+       Suppose you have a failing build, xmessage will alert you when
+       it succeeds.
 
-	      when "make" "xmessage 'hurrah, build passed'"
+              when "make" "xmessage 'hurrah, build passed'"
 
        Or you want to say hello to john when we logs on
 
-	      when "w | grep john" "echo 'hello, john' | write john"
+              when "w | grep john" "echo 'hello, john' | write john"
+
+       Or maybe you have a daemon failing in a tight loop due to
+       misconfiguration or lack of resources. One can run it with when and
+       be alerted to when it becomes happy
+
+              when -n 10 -t "<failing daemon>" "xmessage 'daemon running'"
 
 SEE ALSO
        watch(1)
@@ -71,22 +78,25 @@ SEE ALSO
 COPYRIGHT
        Copyright (C) 2013 Andrew Gwozdziewycz
 
-       This program is free software: you can redistribute it and/or modify it
-       under the terms of the GNU General Public License as published  by  the
-       Free  Software Foundation, either version 3 of the License, or (at your
-       option) any later version.
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published
+       by the Free Software Foundation, either version 3 of the License,
+       or (at  your option) any later version.
 
-       This program is distributed in the hope that it  will  be  useful,  but
-       WITHOUT  ANY  WARRANTY;  without  even  the  implied  warranty  of MER-
-       CHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  General
-       Public License for more details.
+       This  program  is  distributed  in  the  hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+       General Public License for more details.
 
-       You should have received a copy of the GNU General Public License along
-       with this program.  If not, see <http://www.gnu.org/licenses/>
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 AUTHOR
        when was written by Andrew Gwozdziewycz <web@apgwoz.com> in 2013
 
 
 
-				  2013 Dec 10                          WHEN(1)
+                                                                                                         2013
+                                                                                                         Dec
+                                                                                                         10
+                                                                                                         WHEN(1)

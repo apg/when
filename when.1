@@ -102,6 +102,10 @@ the first non-option argument).  This means that flags after
 don't get interpreted by
 .BR when
 itself.
+.SH EXIT STATUS
+when makes an effort to exit with the exit status returned by the
+.I conditional
+in timebomb mode. In zero mode the exit status should be, well, 0.
 .SH EXAMPLES
 .PP
 .I TODO
@@ -114,6 +118,12 @@ when "make" "xmessage 'hurrah, build passed'"
 Or you want to say hello to john when we logs on
 .IP
 when "w | grep john" "echo 'hello, john' | write john"
+.PP
+Or maybe you have a daemon failing in a tight loop due to misconfiguration or
+lack of resources. One can run it with when and be alerted to when it
+becomes happy
+.IP
+when -n 10 -t "<failing daemon>" "xmessage 'daemon running'"
 .SH SEE ALSO
 watch(1)
 .SH COPYRIGHT
