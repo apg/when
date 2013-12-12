@@ -23,8 +23,9 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <limits.h>
 
-#define VERSION "0.2.0"
+#define VERSION "0.2.1"
 
 
 typedef enum state {
@@ -44,7 +45,7 @@ typedef enum state {
 } state_t;
 
 static state_t current_state = START;
-static int alarm_time = 5;
+static long alarm_time = 5;
 static int success_when_zero = 0;
 static int success_when_timebomb = 0;
 static int verbose = 0;
@@ -57,7 +58,6 @@ static char *execargs[4] = {
   NULL
 };
 
-#define VERBOSE(format...) { if (verbose) { fprintf(stderr, format); } }
 
 static void
 timebomb_handler(int signum)
@@ -153,10 +153,10 @@ msleep(long ms)
   struct timespec tm;
   tm.tv_sec = ms / 1000;
   tm.tv_nsec = (ms % 1000) * 1000000;
-  nanosleep(&tm, NULL); // if there's an error, I don't care here.
+  nanosleep(&tm, NULL);
 }
 
-static void
+static int
 finish()
 {
   sigset_t oset;
@@ -188,11 +188,15 @@ finish()
        * command.
        */
 
-      VERBOSE("INFO: ignoring sigchld for finish\n");
+      if (verbose) {
+        fprintf(stderr, "INFO: ignoring sigchld for finish\n");
+      }
+
       if (sigprocmask(SIG_SETMASK, NULL, &oset) == 0) {
         sigaddset(&oset, SIGCHLD);
         sigprocmask(SIG_BLOCK, &oset, NULL);
       }
+
 
       if (waitpid(wait_for, &chld_status, 0) < 0) {
         if (errno == ECHILD) {
@@ -202,8 +206,11 @@ finish()
       else {
         _exit(chld_status);
       }
+      return WEXITSTATUS(chld_status);
     }
   }
+
+  return 0;
 }
 
 static void
@@ -213,7 +220,9 @@ run_zero()
   int last_time;
   int chld_status, status;
 
-  VERBOSE("INFO: run in success when zero mode\n");
+  if (verbose) {
+    fprintf(stderr, "INFO: run in success when zero mode\n");
+  }
 
   do {
     switch (current_state) {
@@ -226,7 +235,10 @@ run_zero()
         _exit(EXIT_FAILURE);
       }
       else if (wait_for == 0) {
-        VERBOSE("INFO: running %s\n", execargs[0]);
+        if (verbose) {
+          fprintf(stderr, "INFO: running %s\n", execargs[2]);
+        }
+
         if (execv(execargs[0], execargs) < 0) {
           perror("execv");
           _exit(EXIT_FAILURE);
@@ -234,30 +246,41 @@ run_zero()
       }
       else {
         current_state = LAUNCHING;
-        VERBOSE("INFO: waiting...\n");
+        if (verbose) {
+          fprintf(stderr, "INFO: waiting...\n");
+        }
+
         if (waitpid(wait_for, &chld_status, 0) >= 0) {
           status = WEXITSTATUS(chld_status);
           if (status == 0) {
-            VERBOSE("INFO: FINISHED, will run finish command\n");
+            if (verbose) {
+              fprintf(stderr, "INFO: FINISHED, will run finish command\n");
+            }
+
             current_state = FINISHED;
           }
           else {
-            VERBOSE("INFO: > 0 exit code, WAITING for restart...\n");
+            if (verbose) {
+              fprintf(stderr, "INFO: > 0 exit code, WAITING for restart.\n");
+            }
             current_state = WAITING;
           }
         }
-        else if (errno == ECHILD) {
-          VERBOSE("INFO: ECHILD, switching to WAITING %d\n", chld_status);
+        else {
+          fprintf(stderr, "INFO: failed waitpid, switching to WAITING\n");
           current_state = WAITING;
         }
       }
+      break;
     case WAITING:
       /* sleep, hoping that we get some progress */
       msleep(10);
       now = time(NULL);
       if ((now - last_time) >= alarm_time) {
         /* process died, timeout occurred -- restart */
-        VERBOSE("INFO: ok to RESTART\n");
+        if (verbose) {
+          fprintf(stderr, "INFO: ok to RESTART\n");
+        }
         current_state = RESTART;
       }
       break;
@@ -274,7 +297,9 @@ static void
 run_timebomb()
 {
 
-  VERBOSE("INFO: run in success when timebomb mode\n");
+  if (verbose) {
+    fprintf(stderr, "INFO: run in success when timebomb mode\n");
+  }
 
   do {
     switch (current_state) {
@@ -286,14 +311,19 @@ run_timebomb()
         _exit(EXIT_FAILURE);
       }
       else if (wait_for == 0) { /* launch conditional_cmd */
-        VERBOSE("INFO: running %s\n", execargs[0]);
+        if (verbose) {
+          fprintf(stderr, "INFO: running %s\n", execargs[0]);
+        }
+
         if (execv(execargs[0], execargs) < 0) {
           perror("execv");
           _exit(EXIT_FAILURE);
         }
       }
       else {
-        VERBOSE("INFO: in LAUNCHING state, setting an alarm\n");
+        if (verbose) {
+          fprintf(stderr, "INFO: in LAUNCHING state, setting an alarm\n");
+        }
         current_state = LAUNCHING;
         alarm(alarm_time);
       }
@@ -332,7 +362,14 @@ main(int argc, char **argv)
         usage(argc, argv);
         _exit(EXIT_SUCCESS);
       case 'n':
-        alarm_time = atoi(optarg);
+        alarm_time = strtol(optarg, NULL, 10);
+        if ((errno == ERANGE &&
+             (alarm_time == LONG_MAX || alarm_time == LONG_MIN))
+            || (alarm_time <= 0)) {
+          fprintf(stderr, "ERROR: invalid seconds argument\n");
+          usage(argc, argv);
+          _exit(EXIT_FAILURE);
+        }
         break;
       case 't':
         success_when_timebomb = 1;
@@ -373,10 +410,10 @@ main(int argc, char **argv)
 
       if (current_state == FINISHED || current_state == ALARM) {
         execargs[2] = strdup(argv[1]);
-        finish();
-        _exit(EXIT_SUCCESS);
+        return finish();
       }
 
+      fprintf(stderr, "ERROR: something went wrong\n");
       return 1;
     }
   }
