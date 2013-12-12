@@ -197,15 +197,13 @@ finish()
         sigprocmask(SIG_BLOCK, &oset, NULL);
       }
 
-
-      if (waitpid(wait_for, &chld_status, 0) < 0) {
-        if (errno == ECHILD) {
-          _exit(EXIT_SUCCESS);
+      do {
+        if (waitpid(wait_for, &chld_status, 0) == -1) {
+          perror("waitpid");
+          return EXIT_FAILURE;
         }
-      }
-      else {
-        _exit(chld_status);
-      }
+      } while (!WIFEXITED(chld_status) && !WIFSIGNALED(chld_status));
+
       return WEXITSTATUS(chld_status);
     }
   }
