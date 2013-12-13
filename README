@@ -14,7 +14,7 @@ DESCRIPTION
        is defined in one of two ways. In timebomb mode, -t, success is
        defined by whether or not the conditional is still running after N
        seconds (as specified by the -n flag). In zero mode, -z, success is
-       acheived when condtional exits with a return value of 0.
+       achieved when conditional exits with a return value of 0.
 
        The -n flag allows the interval to be set (in seconds) between
        successive attempts at running the conditional
