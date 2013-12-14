@@ -1,6 +1,6 @@
 CFLAGS = -Wall -pedantic -Wno-parentheses
 PREFIX ?= /usr/local
-MANPATH ?= $(PREFIX)/share/man/
+MANPATH ?= $(PREFIX)/share/man
 
 all: when
 
