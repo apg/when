@@ -27,19 +27,19 @@ OPTIONS
 
        -n seconds
               Sets the interval for running the conditional to seconds
-              timebomb mode, seconds will need to pass before the conditional
-              succeeds.
+              In timebomb mode, the specified time in seconds will need to pass 
+              before the conditional succeeds.
 
        -t     Sets the success mode to timebomb which succeeds after
-       conditional has been running for at least seconds
+              conditional has been running for at least seconds
 
        -v     Prints the version and exits successfully.
 
        -V     Turns on verbose output. Mostly useful for debugging purposes.
 
        -z     Sets the success mode to zero which succeeds after conditional
-       returns 0 the first time. The conditional is guaranteed to be run
-       at most 1 time every seconds
+              returns 0 the first time. The conditional is guaranteed to be run
+              at most 1 time every seconds
 
 NOTE
        Note that both conditional and command are given to "sh -c" which
