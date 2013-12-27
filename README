@@ -1,7 +1,4 @@
 WHEN(1)
-WHEN(1)
-
-
 
 NAME
        when - repeatedly runs a command, then another when the first succeeds
@@ -62,7 +59,7 @@ EXAMPLES
 
               when "make" "xmessage 'hurrah, build passed'"
 
-       Or you want to say hello to john when we logs on
+       Or you want to say hello to john when he logs on
 
               when "w | grep john" "echo 'hello, john' | write john"
 
